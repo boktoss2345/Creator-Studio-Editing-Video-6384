@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131b">
+  <title>Creator Studio Editing Video</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0e14;
+      --panel: #141925;
+      --panel-2: #1b2130;
+      --line: #2b3447;
+      --text: #f3f6fb;
+      --muted: #9ba8bc;
+      --accent: #8b5cf6;
+      --accent-2: #32d3ba;
+      --danger: #ff6b7c;
+      --shadow: 0 16px 40px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    html { height: 100%; background: var(--bg); overflow: hidden; }
+    body {
+      margin: 0;
+      height: 100%;
+      min-width: 320px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% -25%, #24253e 0, var(--bg) 46%);
+      color: var(--text);
+      font: 16px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button, select, input[type="range"] { min-height: 42px; }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #202839;
+      color: var(--text);
+      padding: .55rem .8rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    button:hover:not(:disabled) { background: #2b3650; border-color: #53617c; }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    button.primary { background: linear-gradient(135deg, #8b5cf6, #5b7cfa); border-color: #9e7aff; font-weight: 750; }
+    button.primary:hover:not(:disabled) { background: linear-gradient(135deg, #9b70f8, #6988ff); }
+    button.danger { color: #ffdce2; border-color: #6c3944; background: #3a2028; }
+    button.ghost { background: transparent; }
+    button.icon { min-width: 42px; padding-inline: .55rem; }
+    button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid #f5c95f;
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px rgba(245,201,95,.18);
+    }
+    .app { height: 100dvh; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto minmax(0,1fr) auto; gap: 12px; padding: 12px; }
+    .topbar, .panel, .timeline-panel { background: rgba(20,25,37,.92); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .topbar { min-height: 68px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; color: #fff; background: conic-gradient(from 215deg, #32d3ba, #6d7dff, #ad62f7, #32d3ba); font-size: 1.25rem; }
+    h1 { font-size: 1.1rem; letter-spacing: -.02em; margin: 0; }
+    .eyebrow { margin: 0; color: var(--muted); font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    #importButton { min-height: 48px; padding-inline: 1.05rem; }
+    #importInput, #imageInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .workspace { min-height: 0; display: grid; grid-template-columns: minmax(210px,.72fr) minmax(360px,2.1fr) minmax(250px,.88fr); gap: 12px; }
+    .panel { min-height: 0; border-radius: 16px; overflow: hidden; }
+    .panel-heading { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .panel-heading h2 { margin: 0; font-size: .94rem; }
+    .library-actions, .preview-heading-actions, .zoom-controls { display: flex; align-items: center; gap: 7px; min-width: 0; }
+    .zoom-controls { padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #0d121d; }
+    .zoom-controls button { min-width: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 6px; background: #273248; font-weight: 800; }
+    #zoomLevel { min-width: 42px; color: #cbd7ea; font-size: .72rem; text-align: center; font-variant-numeric: tabular-nums; }
+    #addPhotoButton { min-height: 32px; padding: .35rem .55rem; font-size: .75rem; }
+    #quickExportButton { min-height: 32px; padding: .35rem .62rem; font-size: .75rem; }
+    .count { color: var(--muted); font-size: .78rem; }
+    .library { display: flex; flex-direction: column; }
+    .dropzone { margin: 12px; padding: 18px 12px; border: 1px dashed #596983; border-radius: 12px; color: var(--muted); text-align: center; font-size: .86rem; }
+    .dropzone.active { background: rgba(139,92,246,.16); border-color: #a58aff; color: #eeeaff; }
+    .library-list { overflow: auto; padding: 0 8px 10px; display: grid; gap: 8px; }
+    .empty { padding: 24px 14px; color: var(--muted); text-align: center; font-size: .9rem; }
+    .media-item { position: relative; min-width: 0; min-height: 78px; display: grid; grid-template-columns: 72px 1fr 32px; gap: 9px; align-items: center; padding: 7px; border: 1px solid transparent; border-radius: 11px; cursor: pointer; }
+    .media-item:hover, .media-item.selected { background: #20283a; border-color: #56627b; }
+    .media-item.selected { box-shadow: inset 3px 0 0 var(--accent-2); }
+    .thumb { width: 72px; height: 58px; border-radius: 7px; background: #0a0e17; object-fit: cover; }
+    .audio-thumb { display: grid; place-items: center; color: var(--accent-2); background: linear-gradient(135deg,#142c35,#18283d); font-size: 1.35rem; }
+    .media-copy { min-width: 0; }
+    .media-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; font-weight: 700; }
+    .media-meta { color: var(--muted); font-size: .73rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .remove-media { width: 30px; height: 30px; min-height: 30px; padding: 0; border-color: transparent; background: transparent; color: #c4cede; }
+    .remove-media:hover:not(:disabled) { color: #fff; background: #512935; border-color: #875061; }
+    .main { min-height: 0; display: grid; grid-template-rows: minmax(230px, 1fr) auto; gap: 12px; }
+    .preview-panel { min-height: 0; display: grid; grid-template-rows: auto minmax(0,1fr) auto; }
+    .preview-stage { position: relative; min-height: 250px; display: grid; place-items: center; overflow: hidden; background-color: #080b12; background-image: linear-gradient(45deg,#0d111b 25%,transparent 25%),linear-gradient(-45deg,#0d111b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#0d111b 75%),linear-gradient(-45deg,transparent 75%,#0d111b 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+    .preview-stage video, #imageCanvas { max-width: 94%; max-height: 92%; display: none; object-fit: contain; transform-origin: center center; }
+    .preview-stage video.show, #imageCanvas.show { display: block; }
+    .preview-stage.can-pan video.show, .preview-stage.can-pan #imageCanvas.show { cursor: grab; }
+    .preview-stage.can-pan { touch-action: none; }
+    .preview-stage.dragging, .preview-stage.dragging video.show, .preview-stage.dragging #imageCanvas.show { cursor: grabbing; }
+    .preview-empty { max-width: 390px; padding: 26px; border: 1px solid #293248; border-radius: 14px; background: rgba(12,16,25,.78); text-align: center; color: var(--muted); }
+    .preview-empty strong { display: block; margin-bottom: 6px; color: var(--text); }
+    .audio-stage { width: min(90%, 480px); display: none; padding: 22px; text-align: center; border: 1px solid #32435b; border-radius: 14px; background: rgba(20,32,46,.92); }
+    .audio-stage.show { display: block; }
+    .audio-art { margin: 0 auto 12px; width: 88px; height: 88px; display: grid; place-items: center; border-radius: 50%; color: #b8fff3; font-size: 2rem; background: radial-gradient(circle at 35% 28%, #65e6cf, #296079 50%, #182940 51%); box-shadow: 0 0 0 10px rgba(50,211,186,.08); }
+    #audioPlayer { width: 100%; }
+    .preview-footer { padding: 9px 13px; display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; }
+    .preview-footer span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tools { overflow: hidden; }
+    .tool-section { border-bottom: 1px solid var(--line); }
+    .tool-section:last-child { border-bottom: 0; }
+    .tool-section summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; cursor: pointer; list-style: none; }
+    .tool-section summary::-webkit-details-marker { display: none; }
+    .tool-section summary::after { content: "⌄"; color: var(--muted); font-size: 1.1rem; transition: transform .15s; }
+    .tool-section[open] summary::after { transform: rotate(180deg); }
+    .tool-section summary:focus-visible { outline: 3px solid #f5c95f; outline-offset: -3px; }
+    .tool-section h3 { margin: 0; font-size: .83rem; color: #dce5f7; letter-spacing: .04em; text-transform: uppercase; }
+    .tool-section > :not(summary) { margin-left: 14px; margin-right: 14px; }
+    .tool-section > .button-grid, .tool-section > .action-stack { margin-left: 14px; margin-right: 14px; }
+    .full-tool-action { width: calc(100% - 28px) !important; margin-top: 7px !important; }
+    .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .control { display: grid; grid-template-columns: 88px 1fr 45px; align-items: center; gap: 7px; margin: 9px 0; font-size: .82rem; }
+    .control label { color: #d9e0ef; }
+    output { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .75rem; text-align: right; }
+    input[type="range"] { width: 100%; accent-color: var(--accent-2); }
+    select { width: 100%; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #202839; padding: .25rem .45rem; }
+    .trim-values { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+    .trim-value { padding: 7px; border-radius: 8px; background: #0d111a; color: var(--muted); font-size: .72rem; }
+    .trim-value strong { display: block; color: #f5f7fb; font-variant-numeric: tabular-nums; font-size: .9rem; }
+    .action-stack { display: grid; gap: 8px; }
+    .capture-result { display: grid; grid-template-columns: 62px 1fr; align-items: center; gap: 9px; margin-top: 10px; }
+    #capturePreview { width: 62px; height: 44px; display: none; border-radius: 5px; object-fit: cover; background: #0b0e14; }
+    .capture-result span { color: var(--muted); font-size: .76rem; }
+    body[data-media-kind="video"] .image-export-only, body[data-media-kind="audio"] .image-export-only { display: none !important; }
+    body[data-media-kind="video"] .capture-result.empty-capture { display: none; }
+    .export-status { margin-top: 10px; padding: 10px; display: none; border: 1px solid #3b4963; border-radius: 9px; background: #101722; color: #dbe7fb; font-size: .8rem; }
+    .export-status.show { display: block; }
+    .export-progress { height: 7px; margin-top: 8px; overflow: hidden; border-radius: 99px; background: #273044; }
+    .export-progress > span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, var(--accent-2), #7893ff); transition: width .15s linear; }
+    .notice { display: none; padding: 9px 12px; margin: 0 12px 10px; border-left: 3px solid var(--accent-2); color: #c7d3e9; background: #102029; border-radius: 4px; font-size: .79rem; }
+    .notice.show { display: block; }
+    .notice.error { border-color: var(--danger); background: #2b1820; color: #ffdce2; }
+    .timeline-panel { border-radius: 16px; padding: 11px 14px 13px; }
+    .transport { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+    .transport-left, .transport-right { display: flex; align-items: center; gap: 6px; }
+    .time-readout { min-width: 106px; color: #dfe7f6; font-variant-numeric: tabular-nums; font-size: .84rem; text-align: center; }
+    .transport button { min-width: 42px; }
+    .timeline-scroll { overflow-x: auto; padding-bottom: 2px; }
+    .timeline { position: relative; min-width: 620px; height: 126px; padding-left: 73px; user-select: none; touch-action: none; }
+    .ruler { position: relative; height: 25px; border-bottom: 1px solid #3a465d; color: #98a8c3; font-size: .68rem; }
+    .tick { position: absolute; bottom: 0; height: 7px; border-left: 1px solid #63718c; padding-left: 4px; transform: translateX(-1px); white-space: nowrap; }
+    .track-label { position: absolute; left: 0; width: 65px; color: #aab7cc; font-size: .72rem; text-align: right; padding-right: 10px; }
+    .track-label.video-label { top: 39px; }
+    .track-label.audio-label { top: 82px; }
+    .track { position: absolute; left: 73px; right: 0; height: 33px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0,1fr); gap: 3px; padding: 3px; border: 1px solid #303b50; border-radius: 5px; background: #0d121d; overflow: hidden; }
+    .video-track { top: 31px; }
+    .audio-track { top: 74px; }
+    .clip { position: relative; min-width: 0; min-height: 0; display: flex; align-items: center; overflow: hidden; padding: 0 9px; border: 0; border-radius: 3px; color: #fff; font: inherit; font-size: .72rem; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+    button.clip { cursor: pointer; text-align: left; }
+    button.clip.selected { box-shadow: inset 0 0 0 2px #f6cf62; }
+    .video-clip { background: linear-gradient(90deg,#5c45b5,#806de3); }
+    .audio-clip { background: repeating-linear-gradient(90deg,#19796e 0 5px,#40bba9 5px 8px,#19796e 8px 13px); }
+    .playhead { position: absolute; z-index: 5; top: 25px; bottom: 0; width: 2px; background: #f6cf62; box-shadow: 0 0 8px #f6cf62; pointer-events: none; }
+    .playhead::before { content: ""; position: absolute; left: -5px; top: -1px; width: 11px; height: 11px; background: #f6cf62; clip-path: polygon(0 0,100% 0,50% 100%); }
+    .trim-handle { position: absolute; z-index: 6; top: 29px; height: 39px; width: 11px; padding: 0; min-height: 0; border: 0; border-radius: 2px; background: #50dbc6; box-shadow: 0 0 0 1px #bafff5; cursor: ew-resize; }
+    .trim-handle::after { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: #50dbc6; }
+    #trimStartHandle::after { right: 5px; transform: translateX(-1px); width: 1px; height: 86px; }
+    #trimEndHandle::after { left: 5px; width: 1px; height: 86px; }
+    .timeline-disabled { opacity: .45; pointer-events: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 1050px) { .workspace { grid-template-columns: minmax(190px,.7fr) minmax(380px,1.8fr); } .tools { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; } .tools .panel-heading { grid-column: 1/-1; } .tool-section { border-bottom: 0; border-right: 1px solid var(--line); } .tool-section:last-child { border-right: 0; } .tool-section > :not(summary), .tool-section > .button-grid, .tool-section > .action-stack { margin-left: 10px; margin-right: 10px; } }
+    @media (max-width: 760px) { .app { padding: 7px; gap: 7px; } .topbar { min-height: 56px; border-radius: 12px; } .brand-mark { display: none; } .top-actions .primary { min-height: 40px; padding-inline: .65rem; } .workspace { min-height: 0; display: grid; grid-template-columns: minmax(105px,.54fr) minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; gap: 7px; } .library { grid-row: 1; grid-column: 1; max-height: none; overflow: hidden; } .library-list { overflow: auto; } .dropzone { margin: 7px; padding: 9px 5px; font-size: .72rem; } .main { grid-row: 1; grid-column: 2; min-height: 0; } .preview-stage { min-height: 0; } .preview-empty { padding: 12px; font-size: .78rem; } .tools { grid-row: 2; grid-column: 1 / -1; display: block; max-height: 214px; overflow: hidden; } .tools:has(.export-status.show) { max-height: 260px; } .tools .panel-heading { display: none; } .tool-section { border-right: 0; border-bottom: 1px solid var(--line); } .tool-section > :not(summary), .tool-section > .button-grid, .tool-section > .action-stack { margin-left: 10px; margin-right: 10px; } .tool-section summary { min-height: 38px; padding: 8px 10px; } .tool-section h3 { font-size: .76rem; } .tool-section .control { margin: 3px 10px; } .tool-section input[type="range"] { min-height: 27px; } .filters-section[open] { display: grid; grid-template-columns: 1fr 1fr; } .filters-section[open] summary, .filters-section[open] .full-tool-action { grid-column: 1 / -1; } .filters-section .control { grid-template-columns: 54px 1fr 32px; gap: 3px; font-size: .7rem; } .filters-section .full-tool-action { min-height: 34px; margin-top: 3px !important; } .export-section .action-stack { grid-template-columns: 1fr 1fr; gap: 5px; } .export-section .action-stack button, .export-section .action-stack select { min-height: 34px; font-size: .72rem; padding: .35rem; } .export-section .capture-result { min-height: 44px; margin-top: 5px; } .export-section .capture-result span { font-size: .65rem; } .export-section .export-status { margin-top: 5px; padding: 7px; font-size: .72rem; } .export-section .export-progress { margin-top: 5px; } .timeline-panel { border-radius: 12px; padding: 7px 9px; } .transport { align-items: flex-start; margin-bottom: 4px; } .transport-right { flex-wrap: wrap; justify-content: flex-end; } .transport-right .count { display: none; } .timeline { height: 101px; } }
+    @media (max-width: 480px) { .topbar { align-items: center; } .brand h1 { font-size: .78rem; } .eyebrow, #projectState { display: none; } .top-actions { flex-direction: row; align-items: center; } .top-actions .primary { min-height: 38px; font-size: .74rem; } .transport { gap: 4px; } .transport button { min-width: 36px; min-height: 36px; padding-inline: .35rem; font-size: .78rem; } .transport-left { flex-wrap: nowrap; gap: 3px; } .time-readout { min-width: 60px; font-size: .61rem; } #fullscreenButton { width: 36px; font-size: 0; } #fullscreenButton::before { content: "⛶"; font-size: 1rem; } .control { grid-template-columns: 80px 1fr 39px; } .button-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .library .panel-heading { min-height: 42px; padding: 5px; } .library .panel-heading h2, .library-actions .count, #mediaDetails { display: none; } .library-actions { width: 100%; } #addPhotoButton { width: 100%; } #quickExportButton { width: 32px; min-width: 32px; padding: 0; font-size: 0; } #quickExportButton::before { content: "↥"; font-size: 1rem; } }
+    @media (max-height: 850px) and (min-width: 761px) { .app { gap: 8px; padding: 8px; } .topbar { min-height: 54px; } .panel-heading { min-height: 42px; padding: 8px 11px; } .tool-section summary { min-height: 34px; padding: 6px 10px; } .tool-section h3 { font-size: .72rem; } .tool-section > :not(summary), .tool-section > .button-grid, .tool-section > .action-stack { margin-left: 10px; margin-right: 10px; } .tool-section .control { margin-top: 3px; margin-bottom: 3px; } .tool-section input[type="range"] { min-height: 24px; } .tool-section button, .tool-section select { min-height: 34px; font-size: .75rem; } .export-section .action-stack { grid-template-columns: 1fr 1fr; gap: 5px; } .export-section .capture-result { margin-top: 5px; } .timeline-panel { padding: 8px 10px; } .timeline { height: 108px; } }
+    @media (min-width: 1600px) { body { font-size: 17px; } .app { gap: 16px; padding: 16px; } .workspace { grid-template-columns: 300px minmax(600px,2.4fr) 335px; gap: 16px; } button { min-height: 48px; } }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Creator Studio Editing Video">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">▶</div>
+        <div><h1>Creator Studio Editing Video</h1></div>
+      </div>
+      <div class="top-actions">
+        <span id="projectState" class="count" aria-live="polite">No media selected</span>
+        <button id="importButton" class="primary" type="button" aria-label="Import media files">＋ Import Media</button>
+        <input id="importInput" type="file" accept="video/*,audio/*,image/*" multiple>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="panel library" aria-label="Media library">
+        <div class="panel-heading"><h2>Media Library</h2><div class="library-actions"><span id="mediaCount" class="count">0 items</span><button id="addPhotoButton" type="button" data-editor-control aria-label="Add a photo">＋ Photo</button></div></div>
+        <input id="imageInput" type="file" accept="image/*" multiple>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Import media by dropping files or pressing Enter">Drop video, image, or audio files here<br>or press Enter to browse</div>
+        <div id="libraryList" class="library-list"><div class="empty">Import media to start editing. Files stay on this device.</div></div>
+      </aside>
+
+      <section class="main" aria-label="Editor preview">
+        <section class="panel preview-panel">
+          <div class="panel-heading"><h2 id="previewTitle">Preview</h2><div class="preview-heading-actions"><div class="zoom-controls" aria-label="Preview zoom"><button id="zoomOutButton" type="button" data-editor-control aria-label="Zoom out of preview" title="Zoom out">−</button><span id="zoomLevel" aria-live="polite">100%</span><button id="zoomInButton" type="button" data-editor-control aria-label="Zoom in to preview" title="Zoom in">＋</button></div><button id="quickExportButton" class="primary" type="button" data-editor-control aria-label="Export selected video">Export</button><span id="mediaDetails" class="count">Select media to inspect it</span></div></div>
+          <div id="previewStage" class="preview-stage">
+            <div id="previewEmpty" class="preview-empty"><strong>Your canvas is ready</strong>Import a local video, image, or audio file. Nothing is uploaded.</div>
+            <video id="videoPlayer" playsinline preload="metadata" aria-label="Selected video preview"></video>
+            <canvas id="imageCanvas" aria-label="Selected image preview"></canvas>
+            <div id="audioStage" class="audio-stage"><div class="audio-art" aria-hidden="true">♫</div><strong id="audioName">Audio</strong><p class="count">Use the real player below to audition this file.</p><audio id="audioPlayer" controls preload="metadata" aria-label="Selected audio preview"></audio></div>
+          </div>
+          <div class="preview-footer"><span id="sourceInfo">No source loaded</span><span id="visualInfo">Original visual settings</span></div>
+        </section>
+      </section>
+
+      <aside class="panel tools" aria-label="Editing tools">
+        <div class="panel-heading"><h2>Editing Tools</h2><span class="count">Live preview</span></div>
+        <details class="tool-section" open>
+          <summary><h3>Trim range</h3></summary>
+          <div class="button-grid"><button id="setStartButton" type="button" data-editor-control>Set Start <kbd>I</kbd></button><button id="setEndButton" type="button" data-editor-control>Set End <kbd>O</kbd></button></div>
+          <button id="resetTrimButton" class="ghost full-tool-action" type="button" data-editor-control>Reset Trim</button>
+          <div class="trim-values"><div class="trim-value">START<strong id="startTime">00:00.00</strong></div><div class="trim-value">END<strong id="endTime">00:00.00</strong></div></div>
+          <div class="trim-value">SELECTED DURATION<strong id="selectedDuration">00:00.00</strong></div>
+        </details>
+        <details class="tool-section">
+          <summary><h3>Transform</h3></summary>
+          <div class="button-grid"><button id="rotateLeftButton" type="button" data-editor-control>↶ Rotate Left</button><button id="rotateRightButton" type="button" data-editor-control>Rotate Right ↷</button><button id="flipHButton" type="button" data-editor-control>⇋ Flip Horizontal</button><button id="flipVButton" type="button" data-editor-control>⇅ Flip Vertical</button></div>
+          <button id="resetTransformButton" class="ghost full-tool-action" type="button" data-editor-control>Reset Transform</button>
+        </details>
+        <details class="tool-section filters-section">
+          <summary><h3>Filters</h3></summary>
+          <div class="control"><label for="brightness">Brightness</label><input id="brightness" type="range" min="0" max="200" value="100" data-filter><output id="brightnessOut">100%</output></div>
+          <div class="control"><label for="contrast">Contrast</label><input id="contrast" type="range" min="0" max="200" value="100" data-filter><output id="contrastOut">100%</output></div>
+          <div class="control"><label for="saturation">Saturation</label><input id="saturation" type="range" min="0" max="200" value="100" data-filter><output id="saturationOut">100%</output></div>
+          <div class="control"><label for="grayscale">Grayscale</label><input id="grayscale" type="range" min="0" max="100" value="0" data-filter><output id="grayscaleOut">0%</output></div>
+          <div class="control"><label for="sepia">Sepia</label><input id="sepia" type="range" min="0" max="100" value="0" data-filter><output id="sepiaOut">0%</output></div>
+          <div class="control"><label for="blur">Blur</label><input id="blur" type="range" min="0" max="20" value="0" step=".1" data-filter><output id="blurOut">0px</output></div>
+          <button id="resetFiltersButton" class="ghost full-tool-action" type="button" data-editor-control>Reset Filters</button>
+        </details>
+        <details class="tool-section">
+          <summary><h3>Audio</h3></summary>
+          <div class="control"><label for="volume">Volume</label><input id="volume" type="range" min="0" max="100" value="100" data-editor-control><output id="volumeOut">100%</output></div>
+          <div class="control"><label for="speed">Speed</label><select id="speed" data-editor-control aria-label="Playback speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><output id="speedOut">1×</output></div>
+          <button id="muteButton" type="button" data-editor-control style="width:100%">Mute <kbd>M</kbd></button>
+          <p class="count" style="margin:9px 0 0">Separate audio is auditioned locally; it is not mixed into video export.</p>
+        </details>
+        <details class="tool-section export-section">
+          <summary><h3>Capture & export</h3></summary>
+          <div class="action-stack"><button id="captureButton" type="button" data-editor-control>Capture Frame</button><button id="savePngButton" type="button" data-editor-control disabled>Save PNG</button><label class="sr-only image-export-only" for="imageFormat">Image format</label><select id="imageFormat" class="image-export-only" data-editor-control><option value="image/png">Export Image as PNG</option><option value="image/jpeg">Export Image as JPEG</option></select><button id="exportImageButton" class="image-export-only" type="button" data-editor-control>Export Image</button><button id="exportVideoButton" class="primary" type="button" data-editor-control>Export Video</button><button id="cancelExportButton" class="danger" type="button" hidden>Cancel Export</button><button id="downloadVideoButton" type="button" data-editor-control disabled>Save / Download Video</button></div>
+          <div id="captureResult" class="capture-result empty-capture"><img id="capturePreview" alt="Captured frame preview"><span id="captureInfo">No captured frame yet.</span></div>
+          <div id="exportStatus" class="export-status" role="status" aria-live="polite"><span id="exportText">Ready</span><div class="export-progress"><span id="exportProgress"></span></div></div>
+        </details>
+      </aside>
+    </section>
+
+    <section class="timeline-panel" aria-label="Timeline and playback controls">
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <div class="transport">
+        <div class="transport-left">
+          <button id="backButton" class="icon" type="button" data-editor-control aria-label="Skip backward 5 seconds" title="Back 5 seconds">↶ 5</button>
+          <button id="playButton" class="icon" type="button" data-editor-control aria-label="Play" title="Play">▶</button>
+          <button id="pauseButton" class="icon" type="button" data-editor-control aria-label="Pause" title="Pause">Ⅱ</button>
+          <button id="stopButton" class="icon" type="button" data-editor-control aria-label="Stop" title="Stop">■</button>
+          <button id="forwardButton" class="icon" type="button" data-editor-control aria-label="Skip forward 5 seconds" title="Forward 5 seconds">5 ↷</button>
+          <span id="timeReadout" class="time-readout">00:00.00 / 00:00.00</span>
+        </div>
+        <div class="transport-right"><button id="fullscreenButton" type="button" data-editor-control>Fullscreen <kbd>F</kbd></button><span class="count">Space: play/pause · ←/→: seek</span></div>
+      </div>
+      <div class="timeline-scroll"><div id="timeline" class="timeline timeline-disabled" aria-label="Timeline. Click to seek; drag teal handles to trim." tabindex="0"><div id="ruler" class="ruler"></div><span class="track-label video-label">VIDEO</span><div id="videoTrack" class="track video-track"></div><span class="track-label audio-label">AUDIO</span><div id="audioTrack" class="track audio-track"></div><div id="playhead" class="playhead"></div><button id="trimStartHandle" class="trim-handle" type="button" aria-label="Trim start handle"></button><button id="trimEndHandle" class="trim-handle" type="button" aria-label="Trim end handle"></button></div></div>
+    </section>
+  </main>
+  <video id="renderVideo" muted playsinline preload="auto" aria-hidden="true" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></video>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const el = {
+      importButton: $('importButton'), importInput: $('importInput'), addPhotoButton: $('addPhotoButton'), imageInput: $('imageInput'), dropzone: $('dropzone'), libraryList: $('libraryList'), mediaCount: $('mediaCount'), projectState: $('projectState'),
+      previewTitle: $('previewTitle'), mediaDetails: $('mediaDetails'), previewStage: $('previewStage'), previewEmpty: $('previewEmpty'), video: $('videoPlayer'), imageCanvas: $('imageCanvas'), audioStage: $('audioStage'), audio: $('audioPlayer'), audioName: $('audioName'), sourceInfo: $('sourceInfo'), visualInfo: $('visualInfo'), zoomOut: $('zoomOutButton'), zoomIn: $('zoomInButton'), zoomLevel: $('zoomLevel'), quickExport: $('quickExportButton'),
+      setStart: $('setStartButton'), setEnd: $('setEndButton'), resetTrim: $('resetTrimButton'), startTime: $('startTime'), endTime: $('endTime'), selectedDuration: $('selectedDuration'),
+      rotateLeft: $('rotateLeftButton'), rotateRight: $('rotateRightButton'), flipH: $('flipHButton'), flipV: $('flipVButton'), resetTransform: $('resetTransformButton'), resetFilters: $('resetFiltersButton'),
+      volume: $('volume'), volumeOut: $('volumeOut'), speed: $('speed'), speedOut: $('speedOut'), mute: $('muteButton'),
+      capture: $('captureButton'), savePng: $('savePngButton'), imageFormat: $('imageFormat'), exportImage: $('exportImageButton'), exportVideo: $('exportVideoButton'), cancelExport: $('cancelExportButton'), downloadVideo: $('downloadVideoButton'), captureResult: $('captureResult'), capturePreview: $('capturePreview'), captureInfo: $('captureInfo'), exportStatus: $('exportStatus'), exportText: $('exportText'), exportProgress: $('exportProgress'),
+      back: $('backButton'), play: $('playButton'), pause: $('pauseButton'), stop: $('stopButton'), forward: $('forwardButton'), fullscreen: $('fullscreenButton'), timeReadout: $('timeReadout'),
+      notice: $('notice'), timeline: $('timeline'), ruler: $('ruler'), videoTrack: $('videoTrack'), audioTrack: $('audioTrack'), playhead: $('playhead'), trimStartHandle: $('trimStartHandle'), trimEndHandle: $('trimEndHandle'), renderVideo: $('renderVideo')
+    };
+    const defaults = { filters: { brightness: 100, contrast: 100, saturation: 100, grayscale: 0, sepia: 0, blur: 0 }, transform: { rotation: 0, flipH: false, flipV: false }, zoom: 1, volume: 1, muted: false, speed: 1 };
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem('creatorStudioState') || '{}'); } catch (_) { stored = {}; }
+    const state = {
+      media: [], selectedId: null, image: null, trimStart: Number.isFinite(stored.trimStart) ? stored.trimStart : 0, trimEnd: Number.isFinite(stored.trimEnd) ? stored.trimEnd : 0, duration: 0,
+      filters: { ...defaults.filters, ...(stored.filters || {}) }, transform: { ...defaults.transform, ...(stored.transform || {}) }, zoom: clamp(Number(stored.zoom) || defaults.zoom, .5, 2), pan: { x: clamp(Number(stored.pan?.x) || 0, -1000, 1000), y: clamp(Number(stored.pan?.y) || 0, -1000, 1000) },
+      volume: Number.isFinite(stored.volume) ? stored.volume : defaults.volume, muted: !!stored.muted, speed: Number.isFinite(stored.speed) ? stored.speed : defaults.speed,
+      captureBlob: null, captureUrl: null, exportBlob: null, exportUrl: null, exportMime: '', exportDuration: 0, exporting: null, dragHandle: null
+    };
+    const maxPreviewDimension = 1920;
+
+    function escapeHtml(value) { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
+    function formatBytes(bytes) { if (!Number.isFinite(bytes)) return '—'; const units = ['B','KB','MB','GB']; let i = 0, n = bytes; while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; } return `${n.toFixed(i ? (n >= 10 ? 1 : 2) : 0)} ${units[i]}`; }
+    function formatTime(time) { if (!Number.isFinite(time) || time < 0) return '00:00.00'; const minutes = Math.floor(time / 60); const seconds = time % 60; return `${String(minutes).padStart(2,'0')}:${seconds.toFixed(2).padStart(5,'0')}`; }
+    function clamp(n, low, high) { return Math.min(Math.max(n, low), high); }
+    function selected() { return state.media.find(item => item.id === state.selectedId) || null; }
+    function isVideo() { return selected()?.kind === 'video'; }
+    function isImage() { return selected()?.kind === 'image'; }
+    function isAudio() { return selected()?.kind === 'audio'; }
+    function visualFilter() { const f = state.filters; return `brightness(${f.brightness}%) contrast(${f.contrast}%) saturate(${f.saturation}%) grayscale(${f.grayscale}%) sepia(${f.sepia}%) blur(${f.blur}px)`; }
+    function visualTransform() { const t = state.transform; return `rotate(${t.rotation}deg) scale(${(t.flipH ? -1 : 1) * state.zoom}, ${(t.flipV ? -1 : 1) * state.zoom})`; }
+    function previewTransform() { return `translate(${state.pan.x}px, ${state.pan.y}px) ${visualTransform()}`; }
+    function tell(message, type = 'info', persistent = false) { el.notice.textContent = message; el.notice.className = `notice show${type === 'error' ? ' error' : ''}`; clearTimeout(tell.timer); if (!persistent) tell.timer = setTimeout(() => { el.notice.className = 'notice'; }, 5200); }
+    function saveState() {
+      const item = selected();
+      const data = { filters: state.filters, transform: state.transform, zoom: state.zoom, pan: state.pan, volume: state.volume, muted: state.muted, speed: state.speed, trimStart: state.trimStart, trimEnd: state.trimEnd, lastProject: item ? { name: item.file.name, type: item.file.type || item.kind, size: item.file.size, duration: item.duration || null, width: item.width || null, height: item.height || null } : null };
+      try { localStorage.setItem('creatorStudioState', JSON.stringify(data)); } catch (_) { /* Browser storage can be unavailable. Editing remains functional. */ }
+    }
+    function initializeSavedControls() {
+      Object.entries(state.filters).forEach(([key, value]) => { $(key).value = value; $(`${key}Out`).textContent = key === 'blur' ? `${value}px` : `${value}%`; });
+      el.volume.value = Math.round(state.volume * 100); el.volumeOut.textContent = `${el.volume.value}%`;
+      el.speed.value = String(state.speed); el.speedOut.textContent = `${state.speed}×`; updateMuteLabel();
+      const prior = stored.lastProject;
+      if (prior?.name) tell(`Previous project: ${prior.name}. Source files are never stored by this browser—select the file again to continue.`, 'info', true);
+    }
+    function updateMuteLabel() { el.mute.textContent = state.muted ? 'Unmute M' : 'Mute M'; }
+    function setMediaAudioSettings() { [el.video, el.audio].forEach(player => { player.volume = state.volume; player.muted = state.muted; player.playbackRate = state.speed; }); updateMuteLabel(); }
+    function updateVisualPreview(persist = true) {
+      const filter = visualFilter(), transform = previewTransform();
+      el.video.style.filter = filter; el.video.style.transform = transform;
+      el.imageCanvas.style.filter = 'none'; el.imageCanvas.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px) scale(${state.zoom})`;
+      if (isImage() && state.image) drawImagePreview();
+      const t = state.transform, f = state.filters;
+      const transformText = `${t.rotation ? `rotate ${t.rotation}°` : 'upright'}${t.flipH ? ' · H flip' : ''}${t.flipV ? ' · V flip' : ''}`;
+      const filterChanged = f.brightness !== 100 || f.contrast !== 100 || f.saturation !== 100 || f.grayscale || f.sepia || f.blur;
+      el.zoomLevel.textContent = `${Math.round(state.zoom * 100)}%`; el.zoomOut.disabled = state.zoom <= .5; el.zoomIn.disabled = state.zoom >= 2;
+      const panned = state.pan.x || state.pan.y ? ' · moved' : '';
+      el.previewStage.classList.toggle('can-pan', isVideo() || isImage() ? state.zoom !== 1 : false);
+      el.visualInfo.textContent = `${transformText} · view ${Math.round(state.zoom * 100)}%${panned}${filterChanged ? ' · filters on' : ''}`;
+      if (persist) saveState();
+    }
+    function getSourceDimensions(source, item = selected()) {
+      const width = source.videoWidth || source.naturalWidth || item?.width || 1280;
+      const height = source.videoHeight || source.naturalHeight || item?.height || 720;
+      return { width, height };
+    }
+    function getRenderSize(width, height, limit = maxPreviewDimension) {
+      let w = Math.max(1, width), h = Math.max(1, height);
+      const long = Math.max(w, h); if (long > limit) { const scale = limit / long; w = Math.round(w * scale); h = Math.round(h * scale); }
+      if (Math.abs(state.transform.rotation / 90) % 2 === 1) return { width: h, height: w, scaled: long > limit };
+      return { width: w, height: h, scaled: long > limit };
+    }
+    function drawVisual(source, canvas, { limit = maxPreviewDimension, background = true } = {}) {
+      const input = getSourceDimensions(source); const unrotatedLong = Math.max(input.width, input.height); const baseScale = unrotatedLong > limit ? limit / unrotatedLong : 1;
+      const drawWidth = Math.max(1, Math.round(input.width * baseScale)), drawHeight = Math.max(1, Math.round(input.height * baseScale));
+      const turns = ((state.transform.rotation % 360) + 360) % 360; const sideways = turns === 90 || turns === 270;
+      canvas.width = sideways ? drawHeight : drawWidth; canvas.height = sideways ? drawWidth : drawHeight;
+      const ctx = canvas.getContext('2d');
+      if (background) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      ctx.save(); ctx.filter = visualFilter(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(state.transform.rotation * Math.PI / 180); ctx.scale(state.transform.flipH ? -1 : 1, state.transform.flipV ? -1 : 1); ctx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight); ctx.restore();
+      return { width: canvas.width, height: canvas.height, scaled: unrotatedLong > limit };
+    }
+    function drawImagePreview() {
+      if (!state.image) return;
+      try { drawVisual(state.image, el.imageCanvas); } catch (error) { tell(`Could not draw this image: ${error.message}`, 'error'); }
+    }
+    function clearPreview() {
+      el.previewEmpty.hidden = true; el.video.classList.remove('show'); el.imageCanvas.classList.remove('show'); el.audioStage.classList.remove('show');
+      el.video.pause(); el.audio.pause();
+    }
+    function clearDerivedOutput() {
+      if (state.captureUrl) URL.revokeObjectURL(state.captureUrl); state.captureUrl = null; state.captureBlob = null; el.capturePreview.removeAttribute('src'); el.capturePreview.style.display = 'none'; el.captureResult.classList.add('empty-capture'); el.captureInfo.textContent = 'No captured frame yet.'; el.savePng.disabled = true;
+      if (state.exportUrl) URL.revokeObjectURL(state.exportUrl); state.exportUrl = null; state.exportBlob = null; state.exportMime = ''; state.exportDuration = 0; el.downloadVideo.disabled = true; el.exportStatus.classList.remove('show'); el.exportProgress.style.width = '0%'; updateQuickExportButton();
+    }
+    function showEmptyPreview() {
+      delete document.body.dataset.mediaKind; el.previewEmpty.hidden = false; el.video.classList.remove('show'); el.imageCanvas.classList.remove('show'); el.audioStage.classList.remove('show'); el.previewTitle.textContent = 'Preview'; el.mediaDetails.textContent = 'Select media to inspect it'; el.sourceInfo.textContent = 'No source loaded'; el.projectState.textContent = 'No media selected';
+    }
+    function kindFromFile(file) { const mime = file.type || ''; const extension = file.name.split('.').pop()?.toLowerCase() || ''; if (mime.startsWith('video/') || ['mp4','mov','webm','mkv','avi','m4v','ogv'].includes(extension)) return 'video'; if (mime.startsWith('audio/') || ['mp3','wav','ogg','oga','m4a','aac','flac'].includes(extension)) return 'audio'; if (mime.startsWith('image/') || ['png','jpg','jpeg','gif','webp','bmp','avif'].includes(extension)) return 'image'; return null; }
+    function addFiles(fileList) {
+      const files = [...fileList]; if (!files.length) return;
+      let added = 0;
+      for (const file of files) {
+        const kind = kindFromFile(file);
+        if (!kind) { tell(`“${file.name}” is not a supported video, image, or audio file.`, 'error'); continue; }
+        const item = { id: window.crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, file, kind, url: URL.createObjectURL(file), duration: null, width: null, height: null, thumbUrl: null };
+        state.media.push(item); added++; inspectItem(item); if (!state.selectedId) selectMedia(item.id);
+      }
+      renderLibrary(); renderTimeline();
+      if (added) tell(`${added} media ${added === 1 ? 'file was' : 'files were'} imported locally.`, 'info');
+      el.importInput.value = ''; el.imageInput.value = '';
+    }
+    async function inspectItem(item) {
+      const tag = document.createElement(item.kind === 'image' ? 'img' : item.kind === 'audio' ? 'audio' : 'video'); tag.preload = 'metadata'; tag.src = item.url;
+      const eventName = item.kind === 'image' ? 'load' : 'loadedmetadata';
+      try {
+        await new Promise((resolve, reject) => { tag.addEventListener(eventName, resolve, { once: true }); tag.addEventListener('error', reject, { once: true }); });
+        if (item.kind === 'image') { item.width = tag.naturalWidth; item.height = tag.naturalHeight; item.thumbUrl = item.url; }
+        else { item.duration = Number.isFinite(tag.duration) ? tag.duration : null; if (item.kind === 'video') { item.width = tag.videoWidth; item.height = tag.videoHeight; item.thumbUrl = await makeVideoThumbnail(item); } }
+        renderLibrary(); renderTimeline(); if (selected()?.id === item.id) updateSelectedInfo();
+      } catch (_) { item.error = 'Browser could not read metadata'; renderLibrary(); if (selected()?.id === item.id) tell(`The browser could not load “${item.file.name}”. Try a different format.`, 'error'); }
+      tag.removeAttribute('src'); tag.load?.();
+    }
+    function makeVideoThumbnail(item) {
+      return new Promise((resolve) => {
+        const vid = document.createElement('video'); vid.muted = true; vid.preload = 'auto'; vid.src = item.url;
+        let finished = false; const done = () => { if (finished) return; finished = true; clearTimeout(timeout); vid.removeAttribute('src'); vid.load(); resolve(null); };
+        const timeout = setTimeout(done, 4000);
+        vid.addEventListener('loadeddata', () => { try { const c = document.createElement('canvas'); c.width = 160; c.height = 90; const ctx = c.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0,0,c.width,c.height); const scale = Math.min(c.width / vid.videoWidth, c.height / vid.videoHeight); const w = vid.videoWidth * scale, h = vid.videoHeight * scale; ctx.drawImage(vid, (c.width-w)/2, (c.height-h)/2, w, h); c.toBlob(blob => { if (blob) item.thumbUrl = URL.createObjectURL(blob); done(); }, 'image/jpeg', .72); } catch (_) { done(); } }, { once: true });
+        vid.addEventListener('error', done, { once: true });
+      });
+    }
+    function itemMetadata(item) { const parts = [formatBytes(item.file.size), item.file.type || item.kind]; if (item.kind === 'video' || item.kind === 'image') { if (item.width && item.height) parts.push(`${item.width}×${item.height}`); } if ((item.kind === 'video' || item.kind === 'audio') && item.duration !== null) parts.push(formatTime(item.duration)); return parts.join(' · '); }
+    function renderLibrary() {
+      el.mediaCount.textContent = `${state.media.length} ${state.media.length === 1 ? 'item' : 'items'}`;
+      if (!state.media.length) { el.libraryList.innerHTML = '<div class="empty">Import media to start editing. Files stay on this device.</div>'; return; }
+      el.libraryList.innerHTML = state.media.map(item => {
+        const thumbnail = item.kind === 'audio' ? '<div class="thumb audio-thumb" aria-hidden="true">♫</div>' : item.thumbUrl ? `<img class="thumb" src="${item.thumbUrl}" alt="">` : '<div class="thumb audio-thumb" aria-hidden="true">…</div>';
+        return `<article class="media-item ${item.id === state.selectedId ? 'selected' : ''}" tabindex="0" role="button" aria-label="Select ${escapeHtml(item.file.name)}" data-media-id="${item.id}">${thumbnail}<div class="media-copy"><div class="media-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</div><div class="media-meta">${escapeHtml(itemMetadata(item))}</div>${item.error ? '<div class="media-meta" style="color:#ff9aa8">Metadata unavailable</div>' : ''}</div><button class="remove-media" type="button" data-remove-id="${item.id}" aria-label="Remove ${escapeHtml(item.file.name)}" title="Remove media">×</button></article>`;
+      }).join('');
+    }
+    function selectMedia(id) {
+      if (state.exporting) return;
+      const item = state.media.find(entry => entry.id === id); if (!item) return; document.body.dataset.mediaKind = item.kind;
+      clearDerivedOutput(); state.selectedId = id; state.image = null; clearPreview(); renderLibrary();
+      el.previewTitle.textContent = item.kind === 'video' ? 'Video Preview' : item.kind === 'image' ? 'Image Canvas' : 'Audio Preview'; el.projectState.textContent = item.file.name;
+      if (item.kind === 'video') {
+        el.video.src = item.url; el.video.classList.add('show'); el.video.load();
+        el.video.onloadedmetadata = () => { state.duration = el.video.duration; const restoreTrim = stored.lastProject?.name === item.file.name && Number.isFinite(stored.trimStart) && Number.isFinite(stored.trimEnd); state.trimStart = restoreTrim ? clamp(stored.trimStart, 0, Math.max(0, state.duration - .04)) : 0; state.trimEnd = restoreTrim ? clamp(stored.trimEnd, state.trimStart + .04, state.duration) : state.duration; updateSelectedInfo(); updateTimeline(); saveState(); };
+        el.video.onerror = () => tell(`Could not play “${item.file.name}” in this browser.`, 'error');
+      } else if (item.kind === 'image') {
+        const image = new Image(); image.onload = () => { if (selected()?.id !== id) return; state.image = image; state.duration = 0; state.trimStart = 0; state.trimEnd = 0; el.imageCanvas.classList.add('show'); drawImagePreview(); updateSelectedInfo(); updateTimeline(); saveState(); }; image.onerror = () => tell(`Could not decode “${item.file.name}”.`, 'error'); image.src = item.url;
+      } else {
+        el.audioName.textContent = item.file.name; el.audio.src = item.url; el.audioStage.classList.add('show'); el.audio.load(); el.audio.onloadedmetadata = () => { state.duration = el.audio.duration; state.trimStart = 0; state.trimEnd = state.duration; updateSelectedInfo(); updateTimeline(); saveState(); }; el.audio.onerror = () => tell(`Could not play “${item.file.name}” in this browser.`, 'error');
+      }
+      setMediaAudioSettings(); updateVisualPreview(); updateSelectedInfo(); renderTimeline();
+    }
+    function updateSelectedInfo() {
+      const item = selected(); if (!item) return;
+      const resolvedDuration = isVideo() ? el.video.duration : isAudio() ? el.audio.duration : 0;
+      if (Number.isFinite(resolvedDuration)) { state.duration = resolvedDuration; if (!state.trimEnd && resolvedDuration) state.trimEnd = resolvedDuration; }
+      el.mediaDetails.textContent = itemMetadata(item); el.sourceInfo.textContent = `${item.kind.toUpperCase()} · ${item.file.name}`; updateTimeline();
+    }
+    function currentTime() { if (isVideo()) return el.video.currentTime || 0; if (isAudio()) return el.audio.currentTime || 0; return 0; }
+    function updateTimeline() {
+      const hasTimed = (isVideo() || isAudio()) && Number.isFinite(state.duration) && state.duration > 0;
+      el.timeline.classList.toggle('timeline-disabled', !hasTimed); el.timeReadout.textContent = `${formatTime(currentTime())} / ${formatTime(state.duration)}`;
+      el.startTime.textContent = formatTime(state.trimStart); el.endTime.textContent = formatTime(state.trimEnd); el.selectedDuration.textContent = formatTime(Math.max(0, state.trimEnd - state.trimStart));
+      const percent = (time) => hasTimed ? clamp(time / state.duration * 100, 0, 100) : 0;
+      const leftOffset = 73;
+      const trackPosition = (value, handle = false) => { const fraction = percent(value) / 100; return `calc(${fraction * 100}% + ${(leftOffset * (1 - fraction)) - (handle ? 5 : 0)}px)`; };
+      el.playhead.style.left = trackPosition(currentTime());
+      el.trimStartHandle.style.left = trackPosition(state.trimStart, true);
+      el.trimEndHandle.style.left = trackPosition(state.trimEnd, true);
+      renderRuler();
+    }
+    function renderRuler() {
+      const duration = state.duration; if (!Number.isFinite(duration) || duration <= 0) { el.ruler.innerHTML = ''; return; }
+      const count = 8; let ticks = ''; for (let i = 0; i <= count; i++) { const time = duration * i / count; ticks += `<span class="tick" style="left:${i / count * 100}%">${formatTime(time).slice(0,-3)}</span>`; } el.ruler.innerHTML = ticks;
+    }
+    function renderTimeline() {
+      const videoItems = state.media.filter(item => item.kind === 'video'); const audioItems = state.media.filter(item => item.kind === 'audio');
+      el.videoTrack.style.gridTemplateColumns = videoItems.length ? `repeat(${videoItems.length}, minmax(0, 1fr))` : '';
+      el.videoTrack.innerHTML = videoItems.map(item => `<button class="clip video-clip ${item.id === state.selectedId ? 'selected' : ''}" type="button" data-timeline-media-id="${item.id}" title="Select ${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</button>`).join('');
+      const sourceAudio = selected()?.kind === 'video' ? [{ file: { name: `Source audio · ${selected().file.name}` } }] : [];
+      const timelineAudio = [...sourceAudio, ...audioItems];
+      el.audioTrack.style.gridTemplateColumns = timelineAudio.length ? `repeat(${timelineAudio.length}, minmax(0, 1fr))` : '';
+      el.audioTrack.innerHTML = timelineAudio.map(item => item.id ? `<button class="clip audio-clip ${item.id === state.selectedId ? 'selected' : ''}" type="button" data-timeline-media-id="${item.id}" title="Select ${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</button>` : `<span class="clip audio-clip" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>`).join('');
+      updateTimeline();
+    }
+    function setCurrentTime(time) {
+      if (!(isVideo() || isAudio()) || !Number.isFinite(state.duration)) return;
+      const player = isVideo() ? el.video : el.audio; player.currentTime = clamp(time, 0, state.duration); updateTimeline();
+    }
+    async function playMedia() {
+      const player = isVideo() ? el.video : isAudio() ? el.audio : null; if (!player) { tell('Select a video or audio file to play.', 'error'); return; }
+      if (!Number.isFinite(player.duration)) { tell('The source is still loading. Try again in a moment.', 'error'); return; }
+      if (player.currentTime < state.trimStart || player.currentTime >= state.trimEnd) player.currentTime = state.trimStart;
+      try { await player.play(); } catch (error) { tell(`Playback could not start: ${error.message}`, 'error'); }
+    }
+    function pauseMedia() { const player = isVideo() ? el.video : isAudio() ? el.audio : null; if (player) player.pause(); }
+    function stopMedia() { const player = isVideo() ? el.video : isAudio() ? el.audio : null; if (player) { player.pause(); player.currentTime = state.trimStart || 0; updateTimeline(); } }
+    function seekBy(delta) { if (!(isVideo() || isAudio())) { tell('Select a video or audio file to seek.', 'error'); return; } setCurrentTime(currentTime() + delta); }
+    function setTrimPoint(which) {
+      if (!isVideo()) { tell('Trim points are available for a selected video.', 'error'); return; }
+      if (!Number.isFinite(el.video.duration)) { tell('Wait for video metadata before trimming.', 'error'); return; }
+      const time = el.video.currentTime;
+      if (which === 'start') { if (time >= state.trimEnd - .04) { tell('Trim start must be before trim end.', 'error'); return; } state.trimStart = time; }
+      else { if (time <= state.trimStart + .04) { tell('Trim end must be after trim start.', 'error'); return; } state.trimEnd = time; }
+      updateTimeline(); saveState();
+    }
+    function resetTrim() { if (!isVideo() || !Number.isFinite(el.video.duration)) { tell('Select a loaded video to reset its trim.', 'error'); return; } state.trimStart = 0; state.trimEnd = el.video.duration; updateTimeline(); saveState(); }
+    function setTrimFromPointer(which, event) {
+      if (!isVideo() || !state.duration) return;
+      const rect = el.timeline.getBoundingClientRect(); const x = clamp(event.clientX - rect.left - 73, 0, Math.max(1, rect.width - 73)); const value = x / Math.max(1, rect.width - 73) * state.duration;
+      if (which === 'start') state.trimStart = clamp(value, 0, Math.max(0, state.trimEnd - .04)); else state.trimEnd = clamp(value, Math.min(state.duration, state.trimStart + .04), state.duration);
+      if (currentTime() < state.trimStart || currentTime() > state.trimEnd) setCurrentTime(which === 'start' ? state.trimStart : state.trimEnd); updateTimeline();
+    }
+    function updateFilterControl(input) { const key = input.id; state.filters[key] = Number(input.value); $(`${key}Out`).textContent = key === 'blur' ? `${input.value}px` : `${input.value}%`; updateVisualPreview(); }
+    function resetFilters() { Object.entries(defaults.filters).forEach(([key, value]) => { state.filters[key] = value; $(key).value = value; $(`${key}Out`).textContent = key === 'blur' ? `${value}px` : `${value}%`; }); updateVisualPreview(); }
+    function resetTransform() { state.transform = { ...defaults.transform }; state.zoom = defaults.zoom; state.pan = { x: 0, y: 0 }; updateVisualPreview(); }
+    function changeTransform(change) { Object.assign(state.transform, change); state.transform.rotation = ((state.transform.rotation % 360) + 360) % 360; updateVisualPreview(); }
+    function changeZoom(amount) { state.zoom = clamp(Math.round((state.zoom + amount) * 10) / 10, .5, 2); if (state.zoom === 1) state.pan = { x: 0, y: 0 }; updateVisualPreview(); }
+    function previewPanLimit() { const rect = el.previewStage.getBoundingClientRect(); const scaleDistance = Math.max(.08, Math.abs(state.zoom - 1) * .62); return { x: Math.max(24, rect.width * scaleDistance), y: Math.max(24, rect.height * scaleDistance) }; }
+    function applyPreviewPan(x, y) { const limit = previewPanLimit(); state.pan.x = Math.round(clamp(x, -limit.x, limit.x)); state.pan.y = Math.round(clamp(y, -limit.y, limit.y)); updateVisualPreview(false); }
+    function downloadBlob(blob, name) { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.style.display = 'none'; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    function visualCanvasFor(source) { const canvas = document.createElement('canvas'); const details = drawVisual(source, canvas); return { canvas, details }; }
+    function captureFrame() {
+      if (!isVideo() || el.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) { tell('Select a loaded video and seek to a frame before capturing.', 'error'); return; }
+      try { const { canvas, details } = visualCanvasFor(el.video); canvas.toBlob(blob => { if (!blob || !blob.size) { tell('The browser did not create a frame image.', 'error'); return; } if (state.captureUrl) URL.revokeObjectURL(state.captureUrl); state.captureBlob = blob; state.captureUrl = URL.createObjectURL(blob); el.capturePreview.src = state.captureUrl; el.capturePreview.style.display = 'block'; el.captureResult.classList.remove('empty-capture'); el.captureInfo.textContent = `PNG frame · ${details.width}×${details.height} · ${formatBytes(blob.size)}${details.scaled ? ' · scaled to 1920px max' : ''}`; el.savePng.disabled = false; tell('Frame captured as a real PNG.'); }, 'image/png'); } catch (error) { tell(`Frame capture failed: ${error.message}`, 'error'); }
+    }
+    function exportImage() {
+      if (!isImage() || !state.image) { tell('Select an image to export it.', 'error'); return; }
+      try { const { canvas, details } = visualCanvasFor(state.image); const mime = el.imageFormat.value; canvas.toBlob(blob => { if (!blob || !blob.size) { tell('The browser did not create an image file.', 'error'); return; } const base = selected().file.name.replace(/\.[^.]+$/, '') || 'image'; const extension = mime === 'image/jpeg' ? 'jpg' : 'png'; downloadBlob(blob, `${base}-edited.${extension}`); tell(`Image exported: ${details.width}×${details.height}, ${formatBytes(blob.size)}.`); }, mime, mime === 'image/jpeg' ? .92 : undefined); } catch (error) { tell(`Image export failed: ${error.message}`, 'error'); }
+    }
+    function pickRecorderMime() { if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return ''; const choices = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4']; return choices.find(type => MediaRecorder.isTypeSupported(type)) || ''; }
+    function extensionForMime(mime) { return mime.startsWith('video/mp4') ? 'mp4' : 'webm'; }
+    function seekRenderer(renderer, time) {
+      return new Promise((resolve, reject) => {
+        if (Math.abs(renderer.currentTime - time) < .01) { resolve(); return; }
+        const clear = () => { renderer.removeEventListener('seeked', complete); renderer.removeEventListener('error', failed); };
+        const complete = () => { clear(); resolve(); };
+        const failed = () => { clear(); reject(new Error('Could not seek to trim start.')); };
+        renderer.addEventListener('seeked', complete, { once: true }); renderer.addEventListener('error', failed, { once: true });
+        try { renderer.currentTime = time; } catch (error) { clear(); reject(error); }
+      });
+    }
+    function setExporting(active) { document.querySelectorAll('[data-editor-control]').forEach(control => { control.disabled = active; }); el.cancelExport.hidden = !active; el.exportStatus.classList.add('show'); }
+    function showExportProblem(message) { el.exportStatus.classList.add('show'); el.exportProgress.style.width = '0%'; el.exportText.textContent = message; tell(message, 'error'); }
+    function stopTracks(stream) { stream?.getTracks().forEach(track => track.stop()); }
+    function cleanupExportResources(job) { if (!job) return; cancelAnimationFrame(job.frameId); try { job.renderer.pause(); } catch (_) {} job.renderer.removeAttribute('src'); job.renderer.load(); stopTracks(job.stream); stopTracks(job.sourceStream); }
+    function finishExport(job, outcome, detail) {
+      if (state.exporting !== job) return;
+      cleanupExportResources(job); state.exporting = null; setExporting(false);
+      el.downloadVideo.disabled = !state.exportBlob; updateQuickExportButton();
+      if (outcome === 'success') { const blob = new Blob(job.chunks, { type: job.mime }); if (!blob.size) { el.exportText.textContent = 'Export failed: no video data was produced.'; tell('Export failed because the recorder returned an empty video.', 'error'); return; } if (state.exportUrl) URL.revokeObjectURL(state.exportUrl); state.exportBlob = blob; state.exportMime = job.mime; state.exportDuration = state.trimEnd - state.trimStart; state.exportUrl = URL.createObjectURL(blob); el.downloadVideo.disabled = false; updateQuickExportButton(); el.exportProgress.style.width = '100%'; el.exportText.textContent = `Export ready · ${job.mime.replace('video/','').toUpperCase()} · ${formatBytes(blob.size)} · ${formatTime(state.exportDuration)}`; el.downloadVideo.focus({ preventScroll: true }); tell(`Video export finished. Click Save Video to save the real file. ${detail || ''}`.trim()); }
+      else { el.exportProgress.style.width = '0%'; el.exportText.textContent = detail; tell(detail, outcome === 'cancelled' ? 'info' : 'error'); }
+    }
+    async function exportVideo() {
+      if (!isVideo()) { showExportProblem('Select a video before exporting.'); return; }
+      if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { showExportProblem('This browser cannot export here because MediaRecorder or Canvas captureStream is unavailable. Use a current Chrome, Edge, Firefox, or Safari version.'); return; }
+      if (!Number.isFinite(el.video.duration) || state.trimEnd - state.trimStart < .04) { showExportProblem('Choose a valid trim range before exporting.'); return; }
+      const mime = pickRecorderMime(); if (!mime) { showExportProblem('This browser has no supported WebM or MP4 recording codec for export.'); return; }
+      pauseMedia(); const item = selected(); const renderer = el.renderVideo; const canvas = document.createElement('canvas'); let stream, sourceStream = null, recorder;
+      try {
+        renderer.src = item.url; renderer.muted = true; renderer.playbackRate = 1;
+        await new Promise((resolve, reject) => { renderer.addEventListener('loadedmetadata', resolve, { once: true }); renderer.addEventListener('error', () => reject(new Error('The video could not be prepared for export.')), { once: true }); renderer.load(); });
+        if (!Number.isFinite(renderer.duration)) throw new Error('The export source has no usable duration.');
+        if (renderer.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await new Promise((resolve, reject) => { renderer.addEventListener('loadeddata', resolve, { once: true }); renderer.addEventListener('error', () => reject(new Error('The video has no readable frame data for export.')), { once: true }); });
+        drawVisual(renderer, canvas); stream = canvas.captureStream(30);
+        const capture = renderer.captureStream || renderer.mozCaptureStream;
+        if (capture) { try { sourceStream = capture.call(renderer); const audioTrack = sourceStream.getAudioTracks()[0]; if (audioTrack) stream.addTrack(audioTrack); } catch (_) { sourceStream = null; } }
+        recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+      } catch (error) { stopTracks(stream); stopTracks(sourceStream); renderer.removeAttribute('src'); renderer.load(); showExportProblem(`Video export could not start: ${error.message}`); return; }
+      const job = { renderer, canvas, stream, sourceStream, recorder, mime, chunks: [], frameId: 0, cancelled: false };
+      state.exporting = job; setExporting(true); el.exportProgress.style.width = '0%'; el.exportText.textContent = 'Exporting… 0%';
+      recorder.addEventListener('dataavailable', event => { if (event.data?.size) job.chunks.push(event.data); });
+      recorder.addEventListener('error', () => finishExport(job, 'error', 'Export failed while recording the video.'));
+      recorder.addEventListener('stop', () => { if (job.cancelled) finishExport(job, 'cancelled', 'Export cancelled. No output file was kept.'); else finishExport(job, 'success', job.sourceStream?.getAudioTracks().length ? 'Audio was included when supported by this browser.' : 'This browser did not expose an audio capture track; the exported video is silent.'); });
+      const renderFrame = () => {
+        if (state.exporting !== job || job.cancelled) return;
+        try { drawVisual(renderer, canvas); const ratio = clamp((renderer.currentTime - state.trimStart) / (state.trimEnd - state.trimStart), 0, 1); const percent = Math.floor(ratio * 100); el.exportProgress.style.width = `${percent}%`; el.exportText.textContent = `Exporting… ${percent}%`; if (renderer.currentTime >= state.trimEnd - .015 || renderer.ended) { renderer.pause(); if (recorder.state !== 'inactive') recorder.stop(); return; } job.frameId = requestAnimationFrame(renderFrame); } catch (error) { if (recorder.state !== 'inactive') recorder.stop(); finishExport(job, 'error', `Export failed while rendering: ${error.message}`); }
+      };
+      try { await seekRenderer(renderer, state.trimStart); recorder.start(250); await renderer.play(); job.frameId = requestAnimationFrame(renderFrame); } catch (error) { job.cancelled = true; if (recorder.state !== 'inactive') recorder.stop(); else finishExport(job, 'error', `Video export could not play: ${error.message}`); }
+    }
+    function cancelExport() { const job = state.exporting; if (!job) return; job.cancelled = true; cancelAnimationFrame(job.frameId); job.renderer.pause(); if (job.recorder.state !== 'inactive') job.recorder.stop(); else finishExport(job, 'cancelled', 'Export cancelled. No output file was kept.'); }
+    function exportedVideoName() { const base = selected()?.file.name.replace(/\.[^.]+$/, '') || 'edited-video'; return `${base}-edited.${extensionForMime(state.exportMime)}`; }
+    function saveExportedVideo() { if (!state.exportBlob) { showExportProblem('Export the selected video before saving it.'); return; } downloadBlob(state.exportBlob, exportedVideoName()); tell('The video file was sent to your browser download location.'); }
+    function updateQuickExportButton() { if (state.exportBlob) { el.quickExport.textContent = 'Save Video'; el.quickExport.setAttribute('aria-label', 'Save exported video'); el.quickExport.title = 'Save exported video'; } else { el.quickExport.textContent = 'Export'; el.quickExport.setAttribute('aria-label', 'Export selected video'); el.quickExport.title = 'Export selected video'; } }
+    function quickExport() { if (state.exportBlob) { saveExportedVideo(); return; } const exportSection = document.querySelector('.export-section'); if (exportSection) { exportSection.open = true; document.querySelectorAll('.tool-section').forEach(section => { if (section !== exportSection) section.open = false; }); } exportVideo(); }
+    function removeMedia(id) {
+      if (state.exporting) return; const index = state.media.findIndex(item => item.id === id); if (index < 0) return; const [item] = state.media.splice(index, 1); const wasSelected = item.id === state.selectedId; if (item.thumbUrl && item.thumbUrl !== item.url) URL.revokeObjectURL(item.thumbUrl); URL.revokeObjectURL(item.url);
+      if (wasSelected) { clearDerivedOutput(); state.selectedId = null; state.image = null; state.duration = state.trimStart = state.trimEnd = 0; el.video.removeAttribute('src'); el.video.load(); el.audio.removeAttribute('src'); el.audio.load(); if (state.media.length) selectMedia(state.media[Math.max(0,index-1)].id); else showEmptyPreview(); }
+      renderLibrary(); renderTimeline(); saveState(); tell(`Removed “${item.file.name}” from this project.`);
+    }
+    function fullscreen() { const target = el.previewStage; if (document.fullscreenElement) document.exitFullscreen?.(); else if (target.requestFullscreen) target.requestFullscreen().catch(error => tell(`Fullscreen is unavailable: ${error.message}`, 'error')); else tell('Fullscreen is not supported by this browser.', 'error'); }
+    function safeKeyboard(event) { const target = event.target; return target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable; }
+
+    el.importButton.addEventListener('click', () => el.importInput.click()); el.importInput.addEventListener('change', event => addFiles(event.target.files));
+    el.addPhotoButton.addEventListener('click', () => el.imageInput.click()); el.imageInput.addEventListener('change', event => addFiles(event.target.files));
+    el.zoomOut.addEventListener('click', () => changeZoom(-.1)); el.zoomIn.addEventListener('click', () => changeZoom(.1));
+    el.quickExport.addEventListener('click', quickExport);
+    let previewGesture = null;
+    el.previewStage.addEventListener('pointerdown', event => { if (state.exporting || !(isVideo() || isImage()) || state.zoom === 1 || (event.pointerType === 'mouse' && event.button !== 0)) return; previewGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: state.pan.x, panY: state.pan.y }; el.previewStage.setPointerCapture(event.pointerId); el.previewStage.classList.add('dragging'); event.preventDefault(); });
+    el.previewStage.addEventListener('pointermove', event => { if (!previewGesture || event.pointerId !== previewGesture.id) return; applyPreviewPan(previewGesture.panX + event.clientX - previewGesture.x, previewGesture.panY + event.clientY - previewGesture.y); });
+    const endPreviewPan = event => { if (!previewGesture || event.pointerId !== previewGesture.id) return; previewGesture = null; el.previewStage.classList.remove('dragging'); saveState(); };
+    el.previewStage.addEventListener('pointerup', endPreviewPan); el.previewStage.addEventListener('pointercancel', endPreviewPan);
+    el.previewStage.addEventListener('dblclick', () => { if ((isVideo() || isImage()) && (state.pan.x || state.pan.y)) { state.pan = { x: 0, y: 0 }; updateVisualPreview(); tell('Preview centered.'); } });
+    document.querySelectorAll('.tool-section').forEach(section => section.addEventListener('toggle', () => { if (section.open) document.querySelectorAll('.tool-section').forEach(other => { if (other !== section) other.open = false; }); }));
+    el.dropzone.addEventListener('click', () => el.importInput.click()); el.dropzone.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.importInput.click(); } });
+    ['dragenter','dragover'].forEach(type => el.dropzone.addEventListener(type, event => { event.preventDefault(); el.dropzone.classList.add('active'); })); ['dragleave','drop'].forEach(type => el.dropzone.addEventListener(type, event => { event.preventDefault(); el.dropzone.classList.remove('active'); })); el.dropzone.addEventListener('drop', event => addFiles(event.dataTransfer.files));
+    el.libraryList.addEventListener('click', event => { const remove = event.target.closest('[data-remove-id]'); if (remove) { event.stopPropagation(); removeMedia(remove.dataset.removeId); return; } const item = event.target.closest('[data-media-id]'); if (item) selectMedia(item.dataset.mediaId); }); el.libraryList.addEventListener('keydown', event => { const item = event.target.closest('[data-media-id]'); if (item && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectMedia(item.dataset.mediaId); } });
+    [el.videoTrack, el.audioTrack].forEach(track => track.addEventListener('click', event => { const clip = event.target.closest('[data-timeline-media-id]'); if (clip) selectMedia(clip.dataset.timelineMediaId); }));
+    el.play.addEventListener('click', playMedia); el.pause.addEventListener('click', pauseMedia); el.stop.addEventListener('click', stopMedia); el.back.addEventListener('click', () => seekBy(-5)); el.forward.addEventListener('click', () => seekBy(5)); el.mute.addEventListener('click', () => { state.muted = !state.muted; setMediaAudioSettings(); saveState(); }); el.fullscreen.addEventListener('click', fullscreen);
+    el.setStart.addEventListener('click', () => setTrimPoint('start')); el.setEnd.addEventListener('click', () => setTrimPoint('end')); el.resetTrim.addEventListener('click', resetTrim);
+    el.rotateLeft.addEventListener('click', () => changeTransform({ rotation: state.transform.rotation - 90 })); el.rotateRight.addEventListener('click', () => changeTransform({ rotation: state.transform.rotation + 90 })); el.flipH.addEventListener('click', () => changeTransform({ flipH: !state.transform.flipH })); el.flipV.addEventListener('click', () => changeTransform({ flipV: !state.transform.flipV })); el.resetTransform.addEventListener('click', resetTransform);
+    document.querySelectorAll('[data-filter]').forEach(input => input.addEventListener('input', () => updateFilterControl(input))); el.resetFilters.addEventListener('click', resetFilters);
+    el.volume.addEventListener('input', () => { state.volume = Number(el.volume.value) / 100; el.volumeOut.textContent = `${el.volume.value}%`; setMediaAudioSettings(); saveState(); }); el.speed.addEventListener('change', () => { state.speed = Number(el.speed.value); el.speedOut.textContent = `${state.speed}×`; setMediaAudioSettings(); saveState(); });
+    el.capture.addEventListener('click', captureFrame); el.savePng.addEventListener('click', () => { if (state.captureBlob) downloadBlob(state.captureBlob, `frame-${formatTime(currentTime()).replace(/[:.]/g,'-')}.png`); else tell('Capture a frame before saving it.', 'error'); }); el.exportImage.addEventListener('click', exportImage); el.exportVideo.addEventListener('click', exportVideo); el.cancelExport.addEventListener('click', cancelExport); el.downloadVideo.addEventListener('click', saveExportedVideo);
+    el.video.addEventListener('timeupdate', () => { if (isVideo() && state.trimEnd && el.video.currentTime >= state.trimEnd) { el.video.pause(); el.video.currentTime = state.trimEnd; } updateTimeline(); }); el.audio.addEventListener('timeupdate', () => { if (isAudio() && state.trimEnd && el.audio.currentTime >= state.trimEnd) { el.audio.pause(); el.audio.currentTime = state.trimEnd; } updateTimeline(); }); el.video.addEventListener('ended', updateTimeline); el.audio.addEventListener('ended', updateTimeline);
+    el.timeline.addEventListener('click', event => { if (event.target.closest('.trim-handle')) return; if (!(isVideo() || isAudio()) || !state.duration) return; const rect = el.timeline.getBoundingClientRect(); const x = clamp(event.clientX - rect.left - 73, 0, Math.max(1, rect.width - 73)); setCurrentTime(x / Math.max(1, rect.width - 73) * state.duration); });
+    [el.trimStartHandle, el.trimEndHandle].forEach(handle => { handle.addEventListener('pointerdown', event => { if (!isVideo()) return; event.preventDefault(); state.dragHandle = handle === el.trimStartHandle ? 'start' : 'end'; handle.setPointerCapture(event.pointerId); setTrimFromPointer(state.dragHandle, event); }); handle.addEventListener('pointermove', event => { if (state.dragHandle) setTrimFromPointer(state.dragHandle, event); }); handle.addEventListener('pointerup', () => { if (state.dragHandle) { state.dragHandle = null; saveState(); } }); handle.addEventListener('keydown', event => { if (!isVideo()) return; const delta = event.key === 'ArrowLeft' ? -.1 : event.key === 'ArrowRight' ? .1 : 0; if (!delta) return; event.preventDefault(); const which = handle === el.trimStartHandle ? 'start' : 'end'; if (which === 'start') state.trimStart = clamp(state.trimStart + delta, 0, state.trimEnd - .04); else state.trimEnd = clamp(state.trimEnd + delta, state.trimStart + .04, state.duration); updateTimeline(); saveState(); }); });
+    document.addEventListener('keydown', event => { if (safeKeyboard(event)) return; if (event.key === ' ') { event.preventDefault(); const player = isVideo() ? el.video : isAudio() ? el.audio : null; player?.paused ? playMedia() : pauseMedia(); } else if (event.key === 'ArrowLeft') { event.preventDefault(); seekBy(-5); } else if (event.key === 'ArrowRight') { event.preventDefault(); seekBy(5); } else if (event.key.toLowerCase() === 'i') setTrimPoint('start'); else if (event.key.toLowerCase() === 'o') setTrimPoint('end'); else if (event.key.toLowerCase() === 'm') { state.muted = !state.muted; setMediaAudioSettings(); saveState(); } else if (event.key.toLowerCase() === 'f') fullscreen(); });
+    window.addEventListener('beforeunload', () => { if (state.exporting) cancelExport(); state.media.forEach(item => { if (item.thumbUrl && item.thumbUrl !== item.url) URL.revokeObjectURL(item.thumbUrl); URL.revokeObjectURL(item.url); }); if (state.captureUrl) URL.revokeObjectURL(state.captureUrl); if (state.exportUrl) URL.revokeObjectURL(state.exportUrl); });
+    initializeSavedControls(); setMediaAudioSettings(); updateQuickExportButton(); updateVisualPreview(); updateTimeline();
+  })();
+  </script>
+</body>
+</html>
